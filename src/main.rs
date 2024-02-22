@@ -1,3 +1,6 @@
+mod commands;
+mod resp;
+
 use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},
