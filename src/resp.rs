@@ -8,14 +8,6 @@ pub enum Resp {
 }
 
 impl Resp {
-    pub fn into_simple_string(s: &str) -> Self {
-        Resp::SimpleString(s.to_owned())
-    }
-
-    pub fn into_bulk_string(s: &str) -> Self {
-        Resp::BulkString(s.to_owned())
-    }
-
     fn parse_simple_string(bytes: &str) -> anyhow::Result<(Self, &str)> {
         let idx = bytes
             .find("\r\n")
