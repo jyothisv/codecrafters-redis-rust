@@ -124,6 +124,21 @@ impl From<Vec<Resp>> for Resp {
     }
 }
 
+pub trait ToResp {
+    fn as_simple_string(&self) -> Resp;
+    fn as_bulk_string(&self) -> Resp;
+}
+
+impl ToResp for str {
+    fn as_simple_string(&self) -> Resp {
+        Resp::SimpleString(self.to_string())
+    }
+
+    fn as_bulk_string(&self) -> Resp {
+        Resp::BulkString(self.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Resp;

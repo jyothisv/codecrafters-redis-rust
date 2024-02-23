@@ -1,4 +1,4 @@
-use crate::resp::Resp;
+use crate::resp::{Resp, ToResp};
 
 pub fn handle_command(cmd: Resp) -> anyhow::Result<String> {
     if let Resp::Array(array) = cmd {
@@ -8,18 +8,18 @@ pub fn handle_command(cmd: Resp) -> anyhow::Result<String> {
         let cmd_args = &array[1..];
 
         return match cmd_name.as_str() {
-            "ping" => handle_ping(),
-            "echo" => handle_echo(&cmd_args[0]),
+            "ping" => handle_ping(cmd_args),
+            "echo" => handle_echo(cmd_args),
             _ => unimplemented!(),
         };
     }
     todo!()
 }
 
-fn handle_ping() -> anyhow::Result<String> {
-    Ok(Resp::into_simple_string("PONG").serialize())
+fn handle_ping(_: &[Resp]) -> anyhow::Result<String> {
+    Ok("PONG".as_simple_string().serialize())
 }
 
-fn handle_echo(arg: &Resp) -> anyhow::Result<String> {
-    Ok(arg.serialize())
+fn handle_echo(args: &[Resp]) -> anyhow::Result<String> {
+    Ok(args[0].serialize())
 }
