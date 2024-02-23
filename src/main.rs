@@ -1,6 +1,8 @@
 mod commands;
 mod resp;
 
+use resp::Resp;
+
 use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},
@@ -25,7 +27,6 @@ fn main() -> anyhow::Result<()> {
 
 fn handle_client(mut stream: TcpStream) -> anyhow::Result<()> {
     let mut buf = [0u8; 512];
-    let response = "+PONG\r\n";
 
     loop {
         let bytes_read = stream.read(&mut buf)?;
@@ -33,6 +34,12 @@ fn handle_client(mut stream: TcpStream) -> anyhow::Result<()> {
         if bytes_read == 0 {
             return Ok(());
         }
+
+        let str = std::str::from_utf8(&buf)?;
+
+        let (parsed, _) = Resp::parse_command(str)?;
+
+        let response = commands::handle_command(parsed)?;
 
         stream.write_all(response.as_bytes())?;
     }
