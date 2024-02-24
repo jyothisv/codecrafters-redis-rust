@@ -4,10 +4,19 @@ use anyhow::anyhow;
 pub enum Resp {
     SimpleString(String),
     BulkString(String),
+    Int(i64),
     Array(Vec<Resp>),
 }
 
 impl Resp {
+    fn parse_int(bytes: &str) -> anyhow::Result<(Self, &str)> {
+        let idx = bytes
+            .find("\r\n")
+            .ok_or(anyhow!("Non-terminated simple string"))?;
+
+        Ok((Resp::Int(bytes[..idx].parse::<i64>()?), &bytes[idx + 2..]))
+    }
+
     fn parse_simple_string(bytes: &str) -> anyhow::Result<(Self, &str)> {
         let idx = bytes
             .find("\r\n")
@@ -67,6 +76,7 @@ impl Resp {
         match head {
             "+" => Self::parse_simple_string(rest),
             "$" => Self::parse_bulk_string(rest),
+            ":" => Self::parse_int(rest),
             "*" => Self::parse_array(rest),
             _ => Err(anyhow!("Unexpected data type")),
         }
@@ -88,17 +98,23 @@ impl Resp {
         match self {
             Resp::SimpleString(s) => s.to_owned(),
             Resp::BulkString(s) => s.to_owned(),
-            Resp::Array(_) => "".to_owned(),
+            _ => panic!("Should only be called on strings"),
         }
     }
 
     pub fn serialize(&self) -> String {
         match self {
             Resp::SimpleString(s) => format!("+{}\r\n", s),
+
             Resp::BulkString(s) => {
                 let len = s.len();
                 format!("${}\r\n{}\r\n", len, s)
             }
+
+            Resp::Int(n) => {
+                format!(":{}\r\n", n)
+            }
+
             Resp::Array(vec) => {
                 let mut s = format!("*{}\r\n", vec.len());
                 for resp in vec {
