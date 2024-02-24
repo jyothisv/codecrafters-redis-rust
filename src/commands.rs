@@ -1,16 +1,14 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
+use crate::{
+    resp::{Resp, ToResp},
+    store::Store,
 };
 
-use crate::resp::{Resp, ToResp};
-
 pub struct CommandHandler {
-    store: Arc<Mutex<HashMap<String, String>>>,
+    store: Store,
 }
 
 impl CommandHandler {
-    pub fn new(store: Arc<Mutex<HashMap<String, String>>>) -> Self {
+    pub fn new(store: Store) -> Self {
         Self { store }
     }
 
@@ -23,9 +21,32 @@ impl CommandHandler {
 
             return match cmd_name.as_str() {
                 "ping" => self.handle_ping(),
-                "echo" => self.handle_echo(&cmd_args[0]),
-                "set" => self.handle_set(&cmd_args[0], &cmd_args[1]),
-                "get" => self.handle_get(&cmd_args[0]),
+                "echo" => {
+                    let arg = &cmd_args[0];
+                    self.handle_echo(arg)
+                }
+                "set" => {
+                    let num_opt_args = cmd_args.len();
+
+                    let mut expiry = None;
+
+                    let key = &cmd_args[0];
+                    let value = &cmd_args[1];
+
+                    if num_opt_args >= 4 {
+                        let cmd_opt_name = cmd_args[2].to_lowercase();
+
+                        if cmd_opt_name == "px" {
+                            expiry = cmd_args[3].parse::<u64>().ok();
+                        }
+                    }
+                    self.handle_set(key, value, expiry)
+                }
+
+                "get" => {
+                    let arg = array[1].to_str();
+                    self.handle_get(&arg)
+                }
                 _ => unimplemented!(),
             };
         }
@@ -40,22 +61,20 @@ impl CommandHandler {
         Ok(arg.as_bulk_string().serialize())
     }
 
-    fn handle_set(&mut self, key: &str, val: &str) -> anyhow::Result<String> {
-        let mut m = self.store.lock().unwrap();
-        m.insert(key.to_owned(), val.to_owned());
-
-        println!("{:?}", m);
+    fn handle_set(
+        &mut self,
+        key: &str,
+        value: &str,
+        expiry: Option<u64>,
+    ) -> anyhow::Result<String> {
+        self.store.insert(key, value, expiry)?;
 
         Ok("OK".as_simple_string().serialize())
     }
 
     fn handle_get(&self, key: &str) -> anyhow::Result<String> {
-        let m = self.store.lock().unwrap();
+        let item = self.store.get(key);
 
-        if let Some(x) = m.get(key) {
-            return Ok(x.as_bulk_string().serialize());
-        }
-
-        Ok("$-1\r\n".to_owned())
+        Ok(item.map_or("$-1\r\n".to_owned(), |x| x.as_bulk_string().serialize()))
     }
 }
