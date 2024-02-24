@@ -1,26 +1,25 @@
 mod commands;
 mod resp;
+mod store;
 
 use commands::CommandHandler;
 use resp::Resp;
 
 use std::{
-    collections::HashMap,
     io::{Read, Write},
     net::{TcpListener, TcpStream},
-    sync::{Arc, Mutex},
     thread,
 };
 
 fn main() -> anyhow::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
 
-    let store: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
+    let store = store::Store::default();
 
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                let store = Arc::clone(&store);
+                let store = store.clone();
                 thread::spawn(move || handle_client(stream, store));
             }
             Err(e) => {
@@ -31,10 +30,7 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn handle_client(
-    mut stream: TcpStream,
-    store: Arc<Mutex<HashMap<String, String>>>,
-) -> anyhow::Result<()> {
+fn handle_client(mut stream: TcpStream, store: store::Store) -> anyhow::Result<()> {
     let mut buf = [0u8; 512];
     let mut command_handler = CommandHandler::new(store);
 
