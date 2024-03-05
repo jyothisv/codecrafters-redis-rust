@@ -1,4 +1,11 @@
-use crate::{resp::ToResp, store::Store};
+use anyhow::anyhow;
+use std::str::FromStr;
+
+mod command_handler;
+
+pub use command_handler::CommandHandler;
+
+use crate::resp::{Parser, Resp};
 
 pub enum Command {
     Ping,
@@ -11,85 +18,53 @@ pub enum Command {
     Get(String),
 }
 
-pub struct CommandHandler {
-    store: Store,
-}
+impl FromStr for Command {
+    type Err = anyhow::Error;
 
-impl CommandHandler {
-    pub fn new(store: Store) -> Self {
-        Self { store }
-    }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parser = Parser::new(s);
 
-    pub fn handle_command(&mut self, cmd: Command) -> anyhow::Result<String> {
-        match cmd {
-            Command::Ping => self.handle_ping(),
-            Command::Echo(arg) => self.handle_echo(&arg),
-            Command::Set { key, value, expiry } => self.handle_set(&key, &value, expiry),
-            Command::Get(key) => self.handle_get(&key),
+        if let Resp::Array(array) = parser.parse()? {
+            let mut cmd_tokens = array.into_iter().map(|x| x.into_string());
+
+            let cmd_name = cmd_tokens
+                .next()
+                .ok_or(anyhow!("No command specified"))?
+                .to_lowercase();
+
+            let command = match cmd_name.as_str() {
+                "ping" => Command::Ping,
+                "echo" => {
+                    let arg = cmd_tokens.next().ok_or(anyhow!("No argument to echo"))?;
+                    Command::Echo(arg)
+                }
+                "set" => {
+                    let key = cmd_tokens.next().ok_or(anyhow!("No key specified"))?;
+                    let value = cmd_tokens.next().ok_or(anyhow!("No value specified"))?;
+
+                    let expiry = cmd_tokens
+                        .next()
+                        .and_then(|px| {
+                            if px.to_lowercase() == "px" {
+                                cmd_tokens.next()
+                            } else {
+                                None
+                            }
+                        })
+                        .and_then(|expiry| expiry.as_str().parse::<u64>().ok());
+
+                    Command::Set { key, value, expiry }
+                }
+                "get" => {
+                    let key = cmd_tokens.next().ok_or(anyhow!("No key specified"))?;
+                    Command::Get(key)
+                }
+                _ => unimplemented!(),
+            };
+
+            Ok(command)
+        } else {
+            Err(anyhow!("Expected an array"))
         }
-
-        // if let Resp::Array(array) = cmd {
-        //     // let cmd_tokens: Vec<_> = array.into_iter().map(|x| x.to_str()).collect();
-
-        //     let cmd_name = array[0].to_str().to_lowercase();
-        //     let cmd_args: Vec<_> = array[1..].iter().map(|x| x.to_str()).collect();
-
-        //     return match cmd_name.as_str() {
-        //         "ping" => self.handle_ping(),
-        //         "echo" => {
-        //             let arg = &cmd_args[0];
-        //             self.handle_echo(arg)
-        //         }
-        //         "set" => {
-        //             let num_opt_args = cmd_args.len();
-
-        //             let mut expiry = None;
-
-        //             let key = &cmd_args[0];
-        //             let value = &cmd_args[1];
-
-        //             if num_opt_args >= 4 {
-        //                 let cmd_opt_name = cmd_args[2].to_lowercase();
-
-        //                 if cmd_opt_name == "px" {
-        //                     expiry = cmd_args[3].parse::<u64>().ok();
-        //                 }
-        //             }
-        //             self.handle_set(key, value, expiry)
-        //         }
-
-        //         "get" => {
-        //             let arg = array[1].to_str();
-        //             self.handle_get(&arg)
-        //         }
-        //         _ => unimplemented!(),
-        //     };
-        // }
-        // todo!()
-    }
-
-    fn handle_ping(&self) -> anyhow::Result<String> {
-        Ok("PONG".as_simple_string().serialize())
-    }
-
-    fn handle_echo(&self, arg: &str) -> anyhow::Result<String> {
-        Ok(arg.as_bulk_string().serialize())
-    }
-
-    fn handle_set(
-        &mut self,
-        key: &str,
-        value: &str,
-        expiry: Option<u64>,
-    ) -> anyhow::Result<String> {
-        self.store.insert(key, value, expiry)?;
-
-        Ok("OK".as_simple_string().serialize())
-    }
-
-    fn handle_get(&self, key: &str) -> anyhow::Result<String> {
-        let item = self.store.get(key);
-
-        Ok(item.map_or("$-1\r\n".to_owned(), |x| x.as_bulk_string().serialize()))
     }
 }

@@ -6,7 +6,6 @@ mod store;
 pub use commands::Command;
 use commands::CommandHandler;
 use config::Config;
-use resp::Resp;
 
 use std::{
     io::{Read, Write},
@@ -48,9 +47,7 @@ fn handle_client(mut stream: TcpStream, store: store::Store) -> anyhow::Result<(
             return Ok(());
         }
 
-        let str = std::str::from_utf8(&buf)?;
-
-        let command = Resp::parse_command(str)?;
+        let command = std::str::from_utf8(&buf)?.parse()?;
 
         let response = command_handler.handle_command(command)?;
 
