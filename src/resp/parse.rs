@@ -123,27 +123,19 @@ impl<'a> Parser<'a> {
             .collect::<String>()
             .parse::<usize>()?;
 
-        let mut result = vec![];
-
         // For rolling back in case of any error
         let last_idx = self.idx;
-        let mut error = None;
 
         self.idx = crlf_idx + 2;
-        for _ in 0..len {
-            match self.parse() {
-                Ok(v) => result.push(v),
-                err => {
-                    error = Some(err);
-                    break;
-                }
-            }
-        }
 
-        if error.is_some() {
-            self.idx = last_idx;
-            return error.unwrap();
-        }
+        let result: Vec<_> = (0..len)
+            .map(|_| self.parse())
+            .collect::<Result<_, _>>()
+            .map_err(|err| {
+                // Rollback
+                self.idx = last_idx;
+                err
+            })?;
 
         Ok(Resp::Array(result))
     }
@@ -198,6 +190,22 @@ mod tests {
         } else {
             panic!("Expected an array!");
         }
+        Ok(())
+    }
+
+    #[test]
+    fn parse_array_rollback() -> anyhow::Result<()> {
+        let s = "abcd*2\r\n$5\r\nhello\r\n$6\r\nworld\r\n";
+
+        let mut parser = Parser::new(s);
+        parser.idx = 4;
+
+        let decoded = parser.parse();
+
+        assert!(decoded.is_err());
+
+        assert_eq!(parser.idx, 4);
+
         Ok(())
     }
 }
