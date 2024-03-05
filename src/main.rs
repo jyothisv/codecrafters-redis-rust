@@ -1,8 +1,10 @@
 mod commands;
+mod config;
 mod resp;
 mod store;
 
 use commands::CommandHandler;
+use config::Config;
 use resp::Resp;
 
 use std::{
@@ -12,7 +14,11 @@ use std::{
 };
 
 fn main() -> anyhow::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
+    let config = Config::new()?;
+
+    let address = format!("127.0.0.1:{}", config.port);
+
+    let listener = TcpListener::bind(address).unwrap();
 
     let store = store::Store::default();
 
