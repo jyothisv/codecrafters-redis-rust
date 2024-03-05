@@ -3,6 +3,7 @@ mod config;
 mod resp;
 mod store;
 
+pub use commands::Command;
 use commands::CommandHandler;
 use config::Config;
 use resp::Resp;
@@ -49,9 +50,9 @@ fn handle_client(mut stream: TcpStream, store: store::Store) -> anyhow::Result<(
 
         let str = std::str::from_utf8(&buf)?;
 
-        let (parsed, _) = Resp::parse_command(str)?;
+        let command = Resp::parse_command(str)?;
 
-        let response = command_handler.handle_command(parsed)?;
+        let response = command_handler.handle_command(command)?;
 
         stream.write_all(response.as_bytes())?;
     }

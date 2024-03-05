@@ -1,3 +1,4 @@
+use crate::Command;
 use anyhow::anyhow;
 
 #[derive(Debug)]
@@ -82,22 +83,61 @@ impl Resp {
         }
     }
 
-    pub fn parse_command(bytes: &str) -> anyhow::Result<(Self, &str)> {
+    pub fn parse_command(bytes: &str) -> anyhow::Result<Command> {
         let (head, rest) = bytes.split_at(1);
 
         if head != "*" {
             return Err(anyhow!("Expected an array"));
         }
 
-        Self::parse_array(rest)
-    }
-}
+        if let (Resp::Array(array), _) = Self::parse_array(rest)? {
+            let mut cmd_tokens = array.into_iter().map(|x| x.into_string());
 
-impl Resp {
-    pub fn to_str(&self) -> String {
+            let cmd_name = cmd_tokens
+                .next()
+                .ok_or(anyhow!("No command specified"))?
+                .to_lowercase();
+
+            let command = match cmd_name.as_str() {
+                "ping" => Command::Ping,
+                "echo" => {
+                    let arg = cmd_tokens.next().ok_or(anyhow!("No argument to echo"))?;
+                    Command::Echo(arg)
+                }
+                "set" => {
+                    let key = cmd_tokens.next().ok_or(anyhow!("No key specified"))?;
+                    let value = cmd_tokens.next().ok_or(anyhow!("No value specified"))?;
+
+                    let expiry = cmd_tokens
+                        .next()
+                        .and_then(|px| {
+                            if px.to_lowercase() == "px" {
+                                cmd_tokens.next()
+                            } else {
+                                None
+                            }
+                        })
+                        .and_then(|expiry| expiry.as_str().parse::<u64>().ok());
+
+                    Command::Set { key, value, expiry }
+                }
+                "get" => {
+                    let key = cmd_tokens.next().ok_or(anyhow!("No key specified"))?;
+                    Command::Get(key)
+                }
+                _ => unimplemented!(),
+            };
+
+            Ok(command)
+        } else {
+            Err(anyhow!("Expected an array"))
+        }
+    }
+
+    pub fn into_string(self) -> String {
         match self {
-            Resp::SimpleString(s) => s.to_owned(),
-            Resp::BulkString(s) => s.to_owned(),
+            Resp::SimpleString(s) => s,
+            Resp::BulkString(s) => s,
             _ => panic!("Should only be called on strings"),
         }
     }
@@ -156,7 +196,7 @@ mod tests {
         let s = "lisp";
         let encoded = format!("+{s}\r\n");
         let decoded = Resp::parse_next(&encoded)?;
-        let decoded = decoded.0.to_str();
+        let decoded = decoded.0.to_string();
         assert_eq!(decoded, s);
         Ok(())
     }
@@ -166,7 +206,7 @@ mod tests {
         let s = "";
         let encoded = format!("${}\r\n{}\r\n", s.len(), s);
         let decoded = Resp::parse_next(&encoded)?;
-        let decoded = decoded.0.to_str();
+        let decoded = decoded.0.to_string();
         assert_eq!(decoded, s);
         Ok(())
     }
@@ -176,7 +216,7 @@ mod tests {
         let s = "This is a bulk string!";
         let encoded = format!("${}\r\n{}\r\n", s.len(), s);
         let decoded = Resp::parse_next(&encoded)?;
-        let decoded = decoded.0.to_str();
+        let decoded = decoded.0.to_string();
         assert_eq!(decoded, s);
         Ok(())
     }
@@ -189,7 +229,7 @@ mod tests {
         let decoded = Resp::parse_next(s)?.0;
 
         if let Resp::Array(vec) = decoded {
-            let decoded: Vec<_> = vec.into_iter().map(|x| x.to_str().to_owned()).collect();
+            let decoded: Vec<_> = vec.into_iter().map(|x| x.to_string().to_owned()).collect();
             assert_eq!(decoded, expected_out);
         } else {
             panic!("Expected an array!");

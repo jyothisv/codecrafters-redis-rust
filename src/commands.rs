@@ -1,7 +1,15 @@
-use crate::{
-    resp::{Resp, ToResp},
-    store::Store,
-};
+use crate::{resp::ToResp, store::Store};
+
+pub enum Command {
+    Ping,
+    Echo(String),
+    Set {
+        key: String,
+        value: String,
+        expiry: Option<u64>,
+    },
+    Get(String),
+}
 
 pub struct CommandHandler {
     store: Store,
@@ -12,45 +20,52 @@ impl CommandHandler {
         Self { store }
     }
 
-    pub fn handle_command(&mut self, cmd: Resp) -> anyhow::Result<String> {
-        if let Resp::Array(array) = cmd {
-            // let cmd_tokens: Vec<_> = array.into_iter().map(|x| x.to_str()).collect();
-
-            let cmd_name = array[0].to_str().to_lowercase();
-            let cmd_args: Vec<_> = array[1..].iter().map(|x| x.to_str()).collect();
-
-            return match cmd_name.as_str() {
-                "ping" => self.handle_ping(),
-                "echo" => {
-                    let arg = &cmd_args[0];
-                    self.handle_echo(arg)
-                }
-                "set" => {
-                    let num_opt_args = cmd_args.len();
-
-                    let mut expiry = None;
-
-                    let key = &cmd_args[0];
-                    let value = &cmd_args[1];
-
-                    if num_opt_args >= 4 {
-                        let cmd_opt_name = cmd_args[2].to_lowercase();
-
-                        if cmd_opt_name == "px" {
-                            expiry = cmd_args[3].parse::<u64>().ok();
-                        }
-                    }
-                    self.handle_set(key, value, expiry)
-                }
-
-                "get" => {
-                    let arg = array[1].to_str();
-                    self.handle_get(&arg)
-                }
-                _ => unimplemented!(),
-            };
+    pub fn handle_command(&mut self, cmd: Command) -> anyhow::Result<String> {
+        match cmd {
+            Command::Ping => self.handle_ping(),
+            Command::Echo(arg) => self.handle_echo(&arg),
+            Command::Set { key, value, expiry } => self.handle_set(&key, &value, expiry),
+            Command::Get(key) => self.handle_get(&key),
         }
-        todo!()
+
+        // if let Resp::Array(array) = cmd {
+        //     // let cmd_tokens: Vec<_> = array.into_iter().map(|x| x.to_str()).collect();
+
+        //     let cmd_name = array[0].to_str().to_lowercase();
+        //     let cmd_args: Vec<_> = array[1..].iter().map(|x| x.to_str()).collect();
+
+        //     return match cmd_name.as_str() {
+        //         "ping" => self.handle_ping(),
+        //         "echo" => {
+        //             let arg = &cmd_args[0];
+        //             self.handle_echo(arg)
+        //         }
+        //         "set" => {
+        //             let num_opt_args = cmd_args.len();
+
+        //             let mut expiry = None;
+
+        //             let key = &cmd_args[0];
+        //             let value = &cmd_args[1];
+
+        //             if num_opt_args >= 4 {
+        //                 let cmd_opt_name = cmd_args[2].to_lowercase();
+
+        //                 if cmd_opt_name == "px" {
+        //                     expiry = cmd_args[3].parse::<u64>().ok();
+        //                 }
+        //             }
+        //             self.handle_set(key, value, expiry)
+        //         }
+
+        //         "get" => {
+        //             let arg = array[1].to_str();
+        //             self.handle_get(&arg)
+        //         }
+        //         _ => unimplemented!(),
+        //     };
+        // }
+        // todo!()
     }
 
     fn handle_ping(&self) -> anyhow::Result<String> {
