@@ -16,6 +16,7 @@ pub enum Command {
         expiry: Option<u64>,
     },
     Get(String),
+    Info(Option<String>),
 }
 
 impl FromStr for Command {
@@ -58,6 +59,10 @@ impl FromStr for Command {
                 "get" => {
                     let key = cmd_tokens.next().ok_or(anyhow!("No key specified"))?;
                     Command::Get(key)
+                }
+                "info" => {
+                    let role = cmd_tokens.next();
+                    Command::Info(role)
                 }
                 _ => unimplemented!(),
             };

@@ -16,6 +16,7 @@ impl CommandHandler {
             Command::Echo(arg) => self.handle_echo(&arg),
             Command::Set { key, value, expiry } => self.handle_set(&key, &value, expiry),
             Command::Get(key) => self.handle_get(&key),
+            Command::Info(key) => self.handle_info(key.as_deref()),
         }
     }
 
@@ -42,5 +43,13 @@ impl CommandHandler {
         let item = self.store.get(key);
 
         Ok(item.map_or("$-1\r\n".to_owned(), |x| x.as_bulk_string().serialize()))
+    }
+
+    fn handle_info(&self, _key: Option<&str>) -> anyhow::Result<String> {
+        let role = "master";
+        let result = format!("# Replication\nrole:{}", role)
+            .as_bulk_string()
+            .serialize();
+        Ok(result)
     }
 }
