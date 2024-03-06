@@ -13,10 +13,16 @@ use std::{
     thread,
 };
 
+use std::sync::OnceLock;
+
+pub static CONFIG: OnceLock<Config> = OnceLock::new();
+
 fn main() -> anyhow::Result<()> {
     let config = Config::new()?;
 
-    let address = format!("127.0.0.1:{}", config.port);
+    CONFIG.get_or_init(|| config);
+
+    let address = format!("127.0.0.1:{}", CONFIG.get().unwrap().port);
 
     let listener = TcpListener::bind(address).unwrap();
 

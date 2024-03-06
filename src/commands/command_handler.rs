@@ -1,5 +1,6 @@
-use crate::Command;
 use crate::{resp::ToResp, store::Store};
+use crate::{Command, CONFIG};
+use anyhow::anyhow;
 
 pub struct CommandHandler {
     store: Store,
@@ -46,7 +47,12 @@ impl CommandHandler {
     }
 
     fn handle_info(&self, _key: Option<&str>) -> anyhow::Result<String> {
-        let role = "master";
+        let config = CONFIG.get().ok_or(anyhow!("Unable to get config"))?;
+        let role = if config.master.is_some() {
+            "master"
+        } else {
+            "slave"
+        };
         let result = format!("# Replication\nrole:{}", role)
             .as_bulk_string()
             .serialize();
