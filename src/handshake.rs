@@ -8,14 +8,12 @@ pub fn do_handshake_with_master(stream: &mut TcpStream) -> anyhow::Result<()> {
 
     let _ = stream.write(ping.serialize().as_bytes())?;
 
-    let master = CONFIG
+    let port = CONFIG
         .get()
         .ok_or(anyhow!("Unable to access the configuration"))?
-        .master
-        .as_ref()
-        .ok_or(anyhow!("No master in the configuration"))?;
+        .port;
 
-    let replconf: Command = Command::ReplconfPort(master.port);
+    let replconf: Command = Command::ReplconfPort(port);
 
     let _ = stream.write(replconf.serialize().as_bytes())?;
 
