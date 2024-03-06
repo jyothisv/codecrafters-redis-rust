@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 
-use crate::{resp::Resp, Command, CONFIG};
+use crate::{Command, CONFIG};
 use std::{
     io::{Read, Write},
     net::TcpStream,
@@ -9,7 +9,7 @@ use std::{
 pub fn do_handshake_with_master(stream: &mut TcpStream) -> anyhow::Result<()> {
     let mut buf = [0u8; 512];
 
-    let ping: Resp = vec!["ping"].into();
+    let ping: Command = Command::Ping;
 
     let _ = stream.write(ping.serialize().as_bytes())?;
 

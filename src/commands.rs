@@ -85,6 +85,7 @@ impl Command {
         let mut result: Vec<String> = vec![];
 
         match self {
+            Self::Ping => result.push("Ping".to_owned()),
             Self::ReplconfPort(port) => {
                 let port = port.to_string();
                 result.extend(["Replconf".to_owned(), "listening-port".to_owned(), port]);
