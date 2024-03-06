@@ -1,11 +1,13 @@
 mod commands;
 mod config;
+mod handshake;
 mod resp;
 mod store;
 
 pub use commands::Command;
 use commands::CommandHandler;
 use config::Config;
+use handshake::do_handshake_with_master;
 
 use std::{
     io::{Read, Write},
@@ -25,6 +27,13 @@ fn main() -> anyhow::Result<()> {
     let listener = TcpListener::bind(address).unwrap();
 
     let store = store::Store::default();
+
+    // Send handshake if we are a replica
+    if config.master.is_some() {
+        let mut stream = TcpStream::connect(config.master_address().unwrap())?;
+
+        do_handshake_with_master(&mut stream)?;
+    }
 
     CONFIG.get_or_init(|| config);
 

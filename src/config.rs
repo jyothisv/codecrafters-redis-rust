@@ -54,4 +54,10 @@ impl Config {
             master_repl_offset,
         })
     }
+
+    pub fn master_address(&self) -> Option<String> {
+        self.master
+            .as_ref()
+            .map(|x| format!("{}:{}", x.host, x.port))
+    }
 }
