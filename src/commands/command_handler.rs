@@ -58,7 +58,7 @@ impl CommandHandler {
         let master_repl_offset = config.master_repl_offset;
 
         let result = format!(
-            "# Replication\nrole:{}master_replid:{}\nmaster_repl_offset:{}",
+            "# Replication\nrole:{}\nmaster_replid:{}\nmaster_repl_offset:{}",
             role, master_replid, master_repl_offset
         )
         .as_bulk_string()
