@@ -48,7 +48,7 @@ impl CommandHandler {
 
     fn handle_info(&self, _key: Option<&str>) -> anyhow::Result<String> {
         let config = CONFIG.get().ok_or(anyhow!("Unable to get config"))?;
-        let role = if config.master.is_some() {
+        let role = if config.master.is_none() {
             "master"
         } else {
             "slave"
