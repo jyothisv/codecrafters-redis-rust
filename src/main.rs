@@ -22,6 +22,10 @@ pub static CONFIG: OnceLock<Config> = OnceLock::new();
 fn main() -> anyhow::Result<()> {
     let config = Config::new()?;
 
+    CONFIG.get_or_init(|| config);
+
+    let config = CONFIG.get().unwrap();
+
     let address = format!("127.0.0.1:{}", config.port);
 
     let listener = TcpListener::bind(address).unwrap();
@@ -34,8 +38,6 @@ fn main() -> anyhow::Result<()> {
 
         do_handshake_with_master(&mut stream)?;
     }
-
-    CONFIG.get_or_init(|| config);
 
     for stream in listener.incoming() {
         match stream {

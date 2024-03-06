@@ -1,11 +1,27 @@
-use crate::resp::{Resp, ToResp};
+use anyhow::anyhow;
+
+use crate::{resp::Resp, CONFIG};
 use std::{io::Write, net::TcpStream};
 
 pub fn do_handshake_with_master(stream: &mut TcpStream) -> anyhow::Result<()> {
-    let ping = "ping".as_bulk_string();
-    let ping = Resp::Array(vec![ping]);
+    let ping: Resp = vec!["ping"].into();
 
     let _ = stream.write(ping.serialize().as_bytes())?;
+
+    let master = CONFIG
+        .get()
+        .ok_or(anyhow!("Unable to access the configuration"))?
+        .master
+        .as_ref()
+        .ok_or(anyhow!("No master in the configuration"))?;
+
+    let replconf: Resp = vec!["REPLCONF", &master.host, &master.port.to_string()].into();
+
+    let _ = stream.write(replconf.serialize().as_bytes())?;
+
+    let replconf: Resp = vec!["REPLCONF", "capa", "psync2"].into();
+
+    let _ = stream.write(replconf.serialize().as_bytes())?;
 
     Ok(())
 }
