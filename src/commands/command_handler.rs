@@ -53,9 +53,16 @@ impl CommandHandler {
         } else {
             "slave"
         };
-        let result = format!("# Replication\nrole:{}", role)
-            .as_bulk_string()
-            .serialize();
+
+        let master_replid = &config.master_replid;
+        let master_repl_offset = config.master_repl_offset;
+
+        let result = format!(
+            "# Replication\nrole:{}master_replid:{}\nmaster_repl_offset:{}",
+            role, master_replid, master_repl_offset
+        )
+        .as_bulk_string()
+        .serialize();
         Ok(result)
     }
 }

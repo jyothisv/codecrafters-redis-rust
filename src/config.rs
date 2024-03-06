@@ -9,6 +9,8 @@ pub struct HostAddr {
 pub struct Config {
     pub port: u32,
     pub master: Option<HostAddr>,
+    pub master_replid: String,
+    pub master_repl_offset: u32,
 }
 
 impl Config {
@@ -42,6 +44,14 @@ impl Config {
             }
         }
 
-        Ok(Self { port, master })
+        let master_replid = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb".to_owned();
+        let master_repl_offset = 0;
+
+        Ok(Self {
+            port,
+            master,
+            master_replid,
+            master_repl_offset,
+        })
     }
 }

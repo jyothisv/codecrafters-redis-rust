@@ -20,13 +20,13 @@ pub static CONFIG: OnceLock<Config> = OnceLock::new();
 fn main() -> anyhow::Result<()> {
     let config = Config::new()?;
 
-    CONFIG.get_or_init(|| config);
-
-    let address = format!("127.0.0.1:{}", CONFIG.get().unwrap().port);
+    let address = format!("127.0.0.1:{}", config.port);
 
     let listener = TcpListener::bind(address).unwrap();
 
     let store = store::Store::default();
+
+    CONFIG.get_or_init(|| config);
 
     for stream in listener.incoming() {
         match stream {
