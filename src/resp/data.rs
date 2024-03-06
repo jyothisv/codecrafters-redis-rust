@@ -53,6 +53,14 @@ impl From<Vec<&str>> for Resp {
     }
 }
 
+impl From<Vec<String>> for Resp {
+    fn from(values: Vec<String>) -> Self {
+        let resp_vec: Vec<_> = values.into_iter().map(|s| Resp::BulkString(s)).collect();
+
+        Self::Array(resp_vec)
+    }
+}
+
 pub trait ToResp {
     fn as_simple_string(&self) -> Resp;
     fn as_bulk_string(&self) -> Resp;

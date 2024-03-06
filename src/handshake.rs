@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 
-use crate::{resp::Resp, CONFIG};
+use crate::{resp::Resp, Command, CONFIG};
 use std::{io::Write, net::TcpStream};
 
 pub fn do_handshake_with_master(stream: &mut TcpStream) -> anyhow::Result<()> {
@@ -15,11 +15,11 @@ pub fn do_handshake_with_master(stream: &mut TcpStream) -> anyhow::Result<()> {
         .as_ref()
         .ok_or(anyhow!("No master in the configuration"))?;
 
-    let replconf: Resp = vec!["REPLCONF", &master.host, &master.port.to_string()].into();
+    let replconf: Command = Command::ReplconfPort(master.port);
 
     let _ = stream.write(replconf.serialize().as_bytes())?;
 
-    let replconf: Resp = vec!["REPLCONF", "capa", "psync2"].into();
+    let replconf: Command = Command::ReplconfCapa("psync2".to_owned());
 
     let _ = stream.write(replconf.serialize().as_bytes())?;
 

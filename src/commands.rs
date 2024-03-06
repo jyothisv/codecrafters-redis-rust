@@ -17,6 +17,8 @@ pub enum Command {
     },
     Get(String),
     Info(Option<String>),
+    ReplconfPort(u32),
+    ReplconfCapa(String),
 }
 
 impl FromStr for Command {
@@ -71,5 +73,26 @@ impl FromStr for Command {
         } else {
             Err(anyhow!("Expected an array"))
         }
+    }
+}
+
+impl Command {
+    pub fn serialize(&self) -> String {
+        let mut result: Vec<String> = vec![];
+
+        match self {
+            Self::ReplconfPort(port) => {
+                let port = port.to_string();
+                result.extend(["Replconf".to_owned(), "listening-port".to_owned(), port]);
+            }
+
+            Self::ReplconfCapa(capa) => {
+                result.extend(["Replconf".to_owned(), "capa".to_owned(), capa.to_owned()]);
+            }
+            _ => unimplemented!(),
+        }
+
+        let resp: Resp = result.into();
+        resp.serialize()
     }
 }

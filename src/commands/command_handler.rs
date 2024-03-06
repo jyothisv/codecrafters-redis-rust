@@ -18,6 +18,7 @@ impl CommandHandler {
             Command::Set { key, value, expiry } => self.handle_set(&key, &value, expiry),
             Command::Get(key) => self.handle_get(&key),
             Command::Info(key) => self.handle_info(key.as_deref()),
+            _ => todo!(),
         }
     }
 
