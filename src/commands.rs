@@ -19,6 +19,10 @@ pub enum Command {
     Info(Option<String>),
     ReplconfPort(u32),
     ReplconfCapa(String),
+    Psync {
+        replica_id: String,
+        offset: i32,
+    },
 }
 
 impl FromStr for Command {
@@ -89,6 +93,12 @@ impl Command {
             Self::ReplconfCapa(capa) => {
                 result.extend(["Replconf".to_owned(), "capa".to_owned(), capa.to_owned()]);
             }
+            Self::Psync { replica_id, offset } => result.extend([
+                "Psync".to_owned(),
+                replica_id.to_owned(),
+                offset.to_string(),
+            ]),
+
             _ => unimplemented!(),
         }
 
