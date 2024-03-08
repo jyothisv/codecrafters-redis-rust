@@ -10,7 +10,7 @@ pub struct Config {
     pub port: u32,
     pub master: Option<HostAddr>,
     pub master_replid: String,
-    pub master_repl_offset: u32,
+    pub master_repl_offset: i32,
 }
 
 impl Config {

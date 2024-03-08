@@ -20,7 +20,7 @@ impl CommandHandler {
             Command::Get(key) => self.handle_get(&key),
             Command::Info(key) => self.handle_info(key.as_deref()),
             Command::ReplConf(conf) => self.handle_replconf(conf),
-            _ => todo!(),
+            Command::Psync { replica_id, offset } => self.handle_psync(replica_id, offset),
         }?;
 
         Ok(response.serialize())
@@ -72,5 +72,16 @@ impl CommandHandler {
 
     fn handle_replconf(&self, _conf: super::ReplConf) -> anyhow::Result<Response> {
         Ok(Response::OK)
+    }
+
+    fn handle_psync(&self, _replica_id: String, _offset: i32) -> anyhow::Result<Response> {
+        let config = CONFIG.get().ok_or(anyhow!("Unable to get config"))?;
+        let repl_id = &config.master_replid;
+        let offset = config.master_repl_offset;
+
+        Ok(Response::SimpleString(format!(
+            "FULLRESYNC {} {}",
+            repl_id, offset
+        )))
     }
 }
