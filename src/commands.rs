@@ -2,6 +2,7 @@ use anyhow::anyhow;
 use std::str::FromStr;
 
 mod command_handler;
+mod response;
 
 pub use command_handler::CommandHandler;
 
@@ -18,7 +19,7 @@ pub enum Command {
     Get(String),
     Info(Option<String>),
     ReplconfPort(u32),
-    ReplconfCapa(String),
+    ReplconfCapa(Vec<String>),
     Psync {
         replica_id: String,
         offset: i32,
@@ -91,9 +92,16 @@ impl Command {
                 result.extend(["Replconf".to_owned(), "listening-port".to_owned(), port]);
             }
 
-            Self::ReplconfCapa(capa) => {
-                result.extend(["Replconf".to_owned(), "capa".to_owned(), capa.to_owned()]);
+            Self::ReplconfCapa(capas) => {
+                result.push("Replconf".to_owned());
+                let capas: Vec<String> = capas
+                    .into_iter()
+                    .flat_map(|capa| ["capa".to_owned(), capa.to_owned()])
+                    .collect();
+
+                result.extend(capas);
             }
+
             Self::Psync { replica_id, offset } => result.extend([
                 "Psync".to_owned(),
                 replica_id.to_owned(),

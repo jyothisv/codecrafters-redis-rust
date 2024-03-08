@@ -68,6 +68,6 @@ fn handle_client(mut stream: TcpStream, store: store::Store) -> anyhow::Result<(
 
         let response = command_handler.handle_command(command)?;
 
-        stream.write_all(response.as_bytes())?;
+        stream.write_all(&response)?;
     }
 }

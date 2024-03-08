@@ -26,7 +26,7 @@ pub fn do_handshake_with_master(stream: &mut TcpStream) -> anyhow::Result<()> {
 
     let _ = stream.read(&mut buf)?;
 
-    let replconf: Command = Command::ReplconfCapa("psync2".to_owned());
+    let replconf: Command = Command::ReplconfCapa(vec!["psync2".to_owned()]);
 
     stream.write_all(replconf.serialize().as_bytes())?;
 
