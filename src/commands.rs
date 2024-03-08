@@ -18,12 +18,16 @@ pub enum Command {
     },
     Get(String),
     Info(Option<String>),
-    ReplconfPort(u32),
-    ReplconfCapa(Vec<String>),
+    ReplConf(ReplConf),
     Psync {
         replica_id: String,
         offset: i32,
     },
+}
+
+pub enum ReplConf {
+    ListeningPort(u32),
+    Capa(Vec<String>),
 }
 
 impl FromStr for Command {
@@ -71,6 +75,45 @@ impl FromStr for Command {
                     let role = cmd_tokens.next();
                     Command::Info(role)
                 }
+                "replconf" => {
+                    let subcmd = cmd_tokens
+                        .next()
+                        .ok_or(anyhow!("No subcommand specified"))?
+                        .to_lowercase();
+
+                    let conf = match subcmd.as_str() {
+                        "listening-port" => {
+                            let port = cmd_tokens
+                                .next()
+                                .ok_or(anyhow!("No listening port specified"))?
+                                .as_str()
+                                .parse::<u32>()?;
+
+                            ReplConf::ListeningPort(port)
+                        }
+                        "capa" => {
+                            let capa = cmd_tokens.next().ok_or(anyhow!("Missing capability"))?;
+                            let mut capas = vec![capa];
+
+                            while let Some(capa_cmd) = cmd_tokens.next() {
+                                let capa_cmd = capa_cmd.to_lowercase();
+
+                                if capa_cmd != "capa" {
+                                    return Err(anyhow!("Expected `capa', found {}", capa_cmd));
+                                }
+
+                                let capa =
+                                    cmd_tokens.next().ok_or(anyhow!("Missing capability"))?;
+                                capas.push(capa);
+                            }
+
+                            ReplConf::Capa(capas)
+                        }
+                        _ => todo!(),
+                    };
+
+                    Command::ReplConf(conf)
+                }
                 _ => unimplemented!(),
             };
 
@@ -87,15 +130,16 @@ impl Command {
 
         match self {
             Self::Ping => result.push("Ping".to_owned()),
-            Self::ReplconfPort(port) => {
+
+            Self::ReplConf(ReplConf::ListeningPort(port)) => {
                 let port = port.to_string();
                 result.extend(["Replconf".to_owned(), "listening-port".to_owned(), port]);
             }
 
-            Self::ReplconfCapa(capas) => {
+            Self::ReplConf(ReplConf::Capa(capas)) => {
                 result.push("Replconf".to_owned());
                 let capas: Vec<String> = capas
-                    .into_iter()
+                    .iter()
                     .flat_map(|capa| ["capa".to_owned(), capa.to_owned()])
                     .collect();
 

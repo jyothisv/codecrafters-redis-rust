@@ -19,8 +19,7 @@ impl CommandHandler {
             Command::Set { key, value, expiry } => self.handle_set(&key, &value, expiry),
             Command::Get(key) => self.handle_get(&key),
             Command::Info(key) => self.handle_info(key.as_deref()),
-            Command::ReplconfPort(port) => self.handle_replconf_port(port),
-            Command::ReplconfCapa(capabilities) => self.handle_replconf_capa(capabilities),
+            Command::ReplConf(conf) => self.handle_replconf(conf),
             _ => todo!(),
         }?;
 
@@ -49,7 +48,7 @@ impl CommandHandler {
     fn handle_get(&self, key: &str) -> anyhow::Result<Response> {
         let item = self.store.get(key);
 
-        Ok(item.map_or(Response::Null, |x| Response::BulkString(x)))
+        Ok(item.map_or(Response::Null, Response::BulkString))
     }
 
     fn handle_info(&self, _key: Option<&str>) -> anyhow::Result<Response> {
@@ -71,11 +70,7 @@ impl CommandHandler {
         Ok(Response::BulkString(result))
     }
 
-    fn handle_replconf_port(&self, _port: u32) -> anyhow::Result<Response> {
-        Ok(Response::OK)
-    }
-
-    fn handle_replconf_capa(&self, _capabilities: Vec<String>) -> anyhow::Result<Response> {
+    fn handle_replconf(&self, _conf: super::ReplConf) -> anyhow::Result<Response> {
         Ok(Response::OK)
     }
 }

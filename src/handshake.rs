@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 
-use crate::{Command, CONFIG};
+use crate::{commands::ReplConf, Command, CONFIG};
 use std::{
     io::{Read, Write},
     net::TcpStream,
@@ -20,13 +20,13 @@ pub fn do_handshake_with_master(stream: &mut TcpStream) -> anyhow::Result<()> {
         .ok_or(anyhow!("Unable to access the configuration"))?
         .port;
 
-    let replconf: Command = Command::ReplconfPort(port);
+    let replconf: Command = Command::ReplConf(ReplConf::ListeningPort(port));
 
     stream.write_all(replconf.serialize().as_bytes())?;
 
     let _ = stream.read(&mut buf)?;
 
-    let replconf: Command = Command::ReplconfCapa(vec!["psync2".to_owned()]);
+    let replconf: Command = Command::ReplConf(ReplConf::Capa(vec!["psync2".to_owned()]));
 
     stream.write_all(replconf.serialize().as_bytes())?;
 

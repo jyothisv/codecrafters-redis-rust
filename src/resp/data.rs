@@ -55,7 +55,7 @@ impl From<Vec<&str>> for Resp {
 
 impl From<Vec<String>> for Resp {
     fn from(values: Vec<String>) -> Self {
-        let resp_vec: Vec<_> = values.into_iter().map(|s| Resp::BulkString(s)).collect();
+        let resp_vec: Vec<_> = values.into_iter().map(Resp::BulkString).collect();
 
         Self::Array(resp_vec)
     }
