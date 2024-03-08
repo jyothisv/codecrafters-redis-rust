@@ -71,11 +71,11 @@ impl CommandHandler {
         Ok(Response::BulkString(result))
     }
 
-    fn handle_replconf_port(&self, port: u32) -> anyhow::Result<Response> {
+    fn handle_replconf_port(&self, _port: u32) -> anyhow::Result<Response> {
         Ok(Response::OK)
     }
 
-    fn handle_replconf_capa(&self, capabilities: Vec<String>) -> anyhow::Result<Response> {
+    fn handle_replconf_capa(&self, _capabilities: Vec<String>) -> anyhow::Result<Response> {
         Ok(Response::OK)
     }
 }
