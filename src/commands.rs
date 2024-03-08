@@ -114,6 +114,16 @@ impl FromStr for Command {
 
                     Command::ReplConf(conf)
                 }
+                "psync" => {
+                    let replica_id = cmd_tokens.next().ok_or(anyhow!("Missing replication ID"))?;
+                    let offset = cmd_tokens
+                        .next()
+                        .ok_or(anyhow!("Missing replication offset"))?
+                        .as_str()
+                        .parse::<i32>()?;
+                    Command::Psync { replica_id, offset }
+                }
+
                 _ => unimplemented!(),
             };
 
