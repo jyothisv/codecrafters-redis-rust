@@ -2,6 +2,7 @@
 pub enum Resp {
     SimpleString(String),
     BulkString(String),
+    File(String),
     Int(i64),
     Array(Vec<Resp>),
 }
@@ -22,6 +23,11 @@ impl Resp {
             Resp::BulkString(s) => {
                 let len = s.len();
                 format!("${}\r\n{}\r\n", len, s)
+            }
+
+            Resp::File(s) => {
+                let len = s.len();
+                format!("${}\r\n{}", len, s)
             }
 
             Resp::Int(n) => {

@@ -1,4 +1,4 @@
-use crate::resp::ToResp;
+use crate::resp::{Resp, ToResp};
 
 pub enum Response {
     OK,
@@ -18,7 +18,7 @@ impl Response {
             Response::Null => "$-1\r\n".to_owned(),
             Response::SimpleString(s) => s.as_simple_string().serialize(),
             Response::BulkString(s) => s.as_bulk_string().serialize(),
-            Response::File(s) => s.as_bulk_string().serialize(),
+            Response::File(s) => Resp::File(s.to_owned()).serialize(),
             Response::Seq(seq) => seq.iter().map(|s| s.serialize()).collect(),
         }
     }
