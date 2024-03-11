@@ -32,7 +32,7 @@ impl CommandHandler {
             Command::Psync { replica_id, offset } => self.handle_psync(replica_id, offset),
         }?;
 
-        Ok(response.serialize().as_bytes().to_vec())
+        Ok(response.serialize())
     }
 
     fn handle_ping(&self) -> anyhow::Result<Response> {
@@ -88,7 +88,7 @@ impl CommandHandler {
         let repl_id = &config.master_replid;
         let offset = config.master_repl_offset;
 
-        let rdb_file = Response::File(String::from_utf8_lossy(EMPTY_RDB).into());
+        let rdb_file = Response::File(EMPTY_RDB.into());
 
         let response = vec![
             Response::SimpleString(format!("FULLRESYNC {} {}", repl_id, offset)),

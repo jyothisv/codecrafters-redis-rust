@@ -11,7 +11,7 @@ pub fn do_handshake_with_master(stream: &mut TcpStream) -> anyhow::Result<()> {
 
     let ping: Command = Command::Ping;
 
-    stream.write_all(ping.serialize().as_bytes())?;
+    stream.write_all(&ping.serialize())?;
 
     let _ = stream.read(&mut buf)?;
 
@@ -22,13 +22,13 @@ pub fn do_handshake_with_master(stream: &mut TcpStream) -> anyhow::Result<()> {
 
     let replconf: Command = Command::ReplConf(ReplConf::ListeningPort(port));
 
-    stream.write_all(replconf.serialize().as_bytes())?;
+    stream.write_all(&replconf.serialize())?;
 
     let _ = stream.read(&mut buf)?;
 
     let replconf: Command = Command::ReplConf(ReplConf::Capa(vec!["psync2".to_owned()]));
 
-    stream.write_all(replconf.serialize().as_bytes())?;
+    stream.write_all(&replconf.serialize())?;
 
     let _ = stream.read(&mut buf)?;
 
@@ -37,7 +37,7 @@ pub fn do_handshake_with_master(stream: &mut TcpStream) -> anyhow::Result<()> {
         offset: -1,
     };
 
-    stream.write_all(psync.serialize().as_bytes())?;
+    stream.write_all(&psync.serialize())?;
 
     let _ = stream.read(&mut buf)?;
 

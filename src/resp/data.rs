@@ -1,8 +1,10 @@
+use bytes::Bytes;
+
 #[derive(Debug)]
 pub enum Resp {
     SimpleString(String),
     BulkString(String),
-    File(String),
+    File(Bytes),
     Int(i64),
     Array(Vec<Resp>),
 }
@@ -16,28 +18,28 @@ impl Resp {
         }
     }
 
-    pub fn serialize(&self) -> String {
+    pub fn serialize(&self) -> Vec<u8> {
         match self {
-            Resp::SimpleString(s) => format!("+{}\r\n", s),
+            Resp::SimpleString(s) => format!("+{}\r\n", s).as_bytes().to_vec(),
 
             Resp::BulkString(s) => {
                 let len = s.len();
-                format!("${}\r\n{}\r\n", len, s)
+                format!("${}\r\n{}\r\n", len, s).as_bytes().to_vec()
             }
 
             Resp::File(s) => {
                 let len = s.len();
-                format!("${}\r\n{}", len, s)
+                let mut vec = format!("${}\r\n", len).as_bytes().to_vec();
+                vec.extend(s);
+                vec
             }
 
-            Resp::Int(n) => {
-                format!(":{}\r\n", n)
-            }
+            Resp::Int(n) => format!(":{}\r\n", n).as_bytes().to_vec(),
 
             Resp::Array(vec) => {
-                let mut s = format!("*{}\r\n", vec.len());
+                let mut s = format!("*{}\r\n", vec.len()).as_bytes().to_vec();
                 for resp in vec {
-                    s.push_str(&resp.serialize());
+                    s.extend(&resp.serialize());
                 }
                 s
             }

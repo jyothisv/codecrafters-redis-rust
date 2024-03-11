@@ -135,7 +135,7 @@ impl FromStr for Command {
 }
 
 impl Command {
-    pub fn serialize(&self) -> String {
+    pub fn serialize(&self) -> Vec<u8> {
         let mut result: Vec<String> = vec![];
 
         match self {
